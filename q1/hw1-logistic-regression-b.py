@@ -6,6 +6,9 @@ import argparse
 import time
 import pickle
 import json
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 
@@ -79,13 +82,47 @@ class LogisticRegressor:
         return accuracy
 
 
+def feature_extractor(X):
+    """
+    X: (n_examples, 785) - flattened 28x28 images + bias term
+    Returns: (n_examples, 813) - images with row indices added before each row + bias
+    """
+    n_examples = X.shape[0]
+
+    # Separate the bias term (last column)
+    X_pixels = X[:, :-1]  # (n_examples, 784)
+    bias = X[:, -1:]      # (n_examples, 1)
+
+    # Reshape to (n_examples, 28, 28)
+    X_reshaped = X_pixels.reshape(n_examples, 28, 28)
+
+    # Create row indices (0-27) and reshape to broadcast
+    row_indices = np.arange(28).reshape(1, 28, 1)
+
+    # Repeat row indices for all examples
+    row_indices = np.broadcast_to(row_indices, (n_examples, 28, 1))
+
+    # Concatenate row indices before each row of 28 pixels
+    X_with_indices = np.concatenate([row_indices, X_reshaped], axis=2)
+
+    # Flatten back to (n_examples, 812) - each row now has 29 values (1 index + 28 pixels)
+    X_flattened = X_with_indices.reshape(n_examples, -1)
+
+    # Append the bias term back at the end
+    return np.concatenate([X_flattened, bias], axis=1)
+
 def main(args):
     utils.configure_seed(seed=args.seed)
 
     data = utils.load_dataset(data_path=args.data_path, bias=True)
-    X_train, y_train = data["train"]
-    X_valid, y_valid = data["dev"]
-    X_test, y_test = data["test"]
+    X_train_raw, y_train = data["train"]
+    X_valid_raw, y_valid = data["dev"]
+    X_test_raw, y_test = data["test"]
+
+    X_train = feature_extractor(X_train_raw)
+    X_valid = feature_extractor(X_valid_raw)
+    X_test = feature_extractor(X_test_raw)
+
     n_classes = np.unique(y_train).size
     n_feats = X_train.shape[1]
 
@@ -154,10 +191,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=20, type=int,
                         help="""Number of epochs to train for.""")
-    parser.add_argument('--data-path', type=str, default="emnist-letters.npz")
+    parser.add_argument('--data-path', type=str, default="data/emnist-letters.npz")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--save-path", required=True)
-    parser.add_argument("--accuracy-plot", default="Q1-logictic-regression-accs.pdf")
-    parser.add_argument("--scores", default="Q1-logictic-regression-scores.json")
+    parser.add_argument("--save-path", default="q1/checkpoints/checkpoint-lr-b.pickle")
+    parser.add_argument("--accuracy-plot", default="q1/plots/Q1-lr-accs-b.pdf")
+    parser.add_argument("--scores", default="q1/scores/Q1-lr-scores-b.json")
     args = parser.parse_args()
     main(args)

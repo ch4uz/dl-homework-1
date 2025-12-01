@@ -6,19 +6,24 @@ import argparse
 import time
 import pickle
 import json
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 
 import utils
 
 
-class Perceptron:
+class LogisticRegressor:
     def __init__(self, n_classes, n_features):
         self.W = np.zeros((n_classes, n_features))
+        self.learning_rate = 0.0001
+        self.l2_penalty = 0.00001
 
     def save(self, path):
         """
-        Save perceptron to the provided path
+        Save to the provided path
         """
         with open(path, "wb") as f:
             pickle.dump(self, f)
@@ -26,17 +31,11 @@ class Perceptron:
     @classmethod
     def load(cls, path):
         """
-        Load perceptron from the provided path
+        Load from the provided path
         """
         with open(path, "rb") as f:
             return pickle.load(f)
 
-    def update_weight(self, x_i, y_i):
-        """
-        x_i (n_features,): a single training example
-        y_i (scalar): the gold label for that example
-        """
-        self.W[y_i] = self.W[y_i] + x_i
 
     def train_epoch(self, X, y):
         """
@@ -44,12 +43,16 @@ class Perceptron:
         y (n_examples,): labels for the whole dataset
         """
         for i in range(X.shape[0]):
-            y_hat_i = self.W @ X[i]
-            pred_class = np.argmax(y_hat_i)
-            true_class = y[i]
-            if pred_class != true_class:
-                self.update_weight(X[i], true_class)
-                self.update_weight(-X[i], pred_class)
+            logits = self.W @ X[i]
+            logits_max = np.max(logits)
+            exp_logits = np.exp(logits - logits_max)
+            P = exp_logits / np.sum(exp_logits)
+
+            ey = np.zeros(self.W.shape[0])
+            ey[y[i]] = 1.0
+            gradient = np.outer(P - ey, X[i]) + self.l2_penalty * self.W
+
+            self.W = self.W - self.learning_rate * gradient
 
 
     def predict(self, X):
@@ -68,7 +71,14 @@ class Perceptron:
         returns classifier accuracy
         """
         y_hat = self.predict(X)
-        accuracy = np.mean(y_hat == y)
+        num_correct = 0
+        for i in range(X.shape[0]):
+            pred_class = y_hat[i]
+            true_class = y[i]
+            if pred_class == true_class:
+                num_correct += 1
+
+        accuracy = num_correct/X.shape[0]
         return accuracy
 
 
@@ -83,7 +93,7 @@ def main(args):
     n_feats = X_train.shape[1]
 
     # initialize the model
-    model = Perceptron(n_classes, n_feats)
+    model = LogisticRegressor(n_classes, n_feats)
 
     epochs = np.arange(1, args.epochs + 1)
 
@@ -121,7 +131,7 @@ def main(args):
     print('Training took {} minutes and {} seconds'.format(minutes, seconds))
 
     print("Reloading best checkpoint")
-    best_model = Perceptron.load(args.save_path)
+    best_model = LogisticRegressor.load(args.save_path)
     test_acc = best_model.evaluate(X_test, y_test)
 
     print('Best model test acc: {:.4f}'.format(test_acc))
@@ -147,10 +157,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=20, type=int,
                         help="""Number of epochs to train for.""")
-    parser.add_argument('--data-path', type=str, default="emnist-letters.npz")
+    parser.add_argument('--data-path', type=str, default="data/emnist-letters.npz")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--save-path", required=True)
-    parser.add_argument("--accuracy-plot", default="Q1-perceptron-accs.pdf")
-    parser.add_argument("--scores", default="Q1-perceptron-scores.json")
+    parser.add_argument("--save-path", default="q1/checkpoints/checkpoint-lr-a.pickle")
+    parser.add_argument("--accuracy-plot", default="q1/plots/Q1-lr-accs-a.pdf")
+    parser.add_argument("--scores", default="q1/scores/Q1-lr-scores-a.json")
     args = parser.parse_args()
     main(args)

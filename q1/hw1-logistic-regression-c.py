@@ -259,6 +259,8 @@ def main(args):
     total_configs = len(learning_rates) * len(l2_penalties) * len(feature_types)
     config_num = 0
 
+    n_classes = np.unique(y_train).size
+
     for feature_type in feature_types:
         print(f"\n{'#'*80}")
         print(f"# Feature Type: {feature_type.upper()}")
@@ -276,8 +278,6 @@ def main(args):
             X_test = feature_extractor_hog(X_test_raw)
             print("Feature extraction complete!")
 
-        # Calculate n_classes and n_feats once per feature type
-        n_classes = np.unique(y_train).size
         n_feats = X_train.shape[1]
 
         for lr in learning_rates:

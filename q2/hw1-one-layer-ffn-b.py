@@ -209,6 +209,59 @@ def train_single_config(train_dataloader, train_X, train_y, dev_X, dev_y, test_X
         "training_time": float(elapsed_time)
     }
 
+def run_best_model_and_plot(train_dataloader, train_X, train_y, dev_X, dev_y, test_X, test_y,
+                            n_feats, n_classes, hidden_size, lr, l2, dropout, activation, optimizer, epochs, model_name):
+    """
+    Retrains the BEST configuration, records history, and generates plots.
+    """
+    print(f"\n{'='*40}")
+    print(f"RETRAINING BEST MODEL: {model_name}")
+    print(f"Hidden: {hidden_size}, LR: {lr}, L2: {l2}, Drop: {dropout}")
+    print(f"{'='*40}")
+
+    model = FeedforwardNetwork(n_classes, n_feats, hidden_size, 1, activation, dropout)
+    
+    if optimizer == 'adam':
+        optim = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2)
+    else:
+        optim = torch.optim.SGD(model.parameters(), lr=lr, weight_decay=l2)
+    
+    criterion = nn.CrossEntropyLoss()
+    
+    train_losses = []
+    valid_accs = []
+    plot_epochs = range(0, epochs + 1) # 0 to 30
+
+    model.eval()
+    init_loss, _ = evaluate(model, train_X, train_y, criterion)
+    _, init_val_acc = evaluate(model, dev_X, dev_y, criterion)
+    train_losses.append(init_loss)
+    valid_accs.append(init_val_acc)
+
+    for i in range(1, epochs + 1):
+        model.train()
+        epoch_losses = []
+        for X_batch, y_batch in train_dataloader:
+            loss = train_batch(X_batch, y_batch, model, optim, criterion)
+            epoch_losses.append(loss)
+        
+        avg_train_loss = torch.tensor(epoch_losses).mean().item()
+        train_losses.append(avg_train_loss)
+
+        _, val_acc = evaluate(model, dev_X, dev_y, criterion)
+        valid_accs.append(val_acc)
+        
+        print(f"Epoch {i}: Train Loss {avg_train_loss:.4f}, Val Acc {val_acc:.4f}")
+
+    _, test_acc = evaluate(model, test_X, test_y, criterion)
+    print(f"Final Test Accuracy: {test_acc:.4f}")
+
+    plot(plot_epochs, {"Train Loss": train_losses}, filename=f'q2/plots/{model_name}-loss.pdf')
+    
+    plot(plot_epochs, {"Valid Accuracy": valid_accs}, filename=f'q2/plots/{model_name}-accuracy.pdf')
+    
+    print(f"Plots saved to q2/plots/{model_name}-loss.pdf and q2/plots/{model_name}-accuracy.pdf")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -247,70 +300,24 @@ def main():
     print(f"N features: {n_feats}")
     print(f"N classes: {n_classes}")
 
-    # Define grid search parameters
-    hidden_sizes = [16, 32, 64, 128, 256]
-    learning_rates = [0.1, 0.01, 0.001, 0.0001]
-    l2_penalties = [0.0, 0.0001]
-    dropouts = [0.0, 0.5]
-    
-    results = []
+    # Fill in with the best hyperparameters found from grid search from hw1-one-layer-ffn-a.py
+    best_hidden = 256
+    best_lr = 0.1
+    best_l2 = 0.0
+    best_drop = 0.0
 
-    total_configs = len(hidden_sizes) * len(learning_rates) * len(l2_penalties) * len(dropouts)
-    config_num = 0
-    print(f"\nStarting Grid Search with {total_configs} configurations")
-    print(f"Optimizer: {opt.optimizer}, Activation: {opt.activation}, Epochs: {opt.epochs}")
-
-    for hs in hidden_sizes:
-        print(f"\nChecking Hidden Size: {hs}")
-        
-        best_acc_for_width = 0.0
-        best_config_for_width = ""
-        
-        for lr in learning_rates:
-            for l2 in l2_penalties:
-                for drop in dropouts:
-                    config_num += 1
-                    config_name = f"h{hs}_lr{lr}_l2{l2}_drop{drop}"
-                    
-                    print(f"\n[Configuration {config_num}/{total_configs}]")
-                    
-                    result = train_single_config(
-                        train_dataloader=train_dataloader,
-                        train_X=train_X, train_y=train_y,
-                        dev_X=dev_X, dev_y=dev_y,
-                        test_X=test_X, test_y=test_y,
-                        n_feats=n_feats,           
-                        n_classes=n_classes,        
-                        hidden_size=hs,
-                        layers=1,                   
-                        dropout=drop,
-                        learning_rate=lr,
-                        l2_penalty=l2,
-                        activation=opt.activation,  
-                        optimizer_name=opt.optimizer,
-                        epochs=opt.epochs,
-                        config_name=config_name
-                    )
-                    
-                    results.append(result)
-                    
-                    # Find best configuration for this hidden size
-                    if result['best_valid_acc'] > best_acc_for_width:
-                        best_acc_for_width = result['best_valid_acc']
-                        best_config_for_width = config_name
-
-        print(f"BEST CONFIGURATION for Hidden {hs}: {best_config_for_width} (Val Acc: {best_acc_for_width:.4f})")
-
-    # Print summary table
-    print("\n" + "="*90)
-    print(f"{'Hidden':<10} {'LR':<10} {'L2':<10} {'Dropout':<10} {'Best Val Acc':<15} {'Test Acc':<15}")
-    print("="*90)
-    
-    results.sort(key=lambda x: (x['hidden_size'], -x['best_valid_acc']))
-    
-    for r in results:
-        print(f"{r['hidden_size']:<10} {r['learning_rate']:<10} {r['l2_penalty']:<10} {r['dropout']:<10} {r['best_valid_acc']:.4f} {r['test_acc']:.4f}")
-    print("="*90)
+    run_best_model_and_plot(
+        train_dataloader, train_X, train_y, dev_X, dev_y, test_X, test_y,
+        n_feats, n_classes,
+        hidden_size=best_hidden,
+        lr=best_lr,
+        l2=best_l2,
+        dropout=best_drop,
+        activation='relu',
+        optimizer='sgd',
+        epochs=30,
+        model_name="best_model_ffn"
+    )
 
 if __name__ == '__main__':
     main()

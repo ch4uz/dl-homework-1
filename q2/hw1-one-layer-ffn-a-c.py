@@ -205,6 +205,7 @@ def train_single_config(train_dataloader, train_X, train_y, dev_X, dev_y, test_X
         "dropout": dropout,
         "best_valid_acc": float(best_valid_acc),
         "test_acc": float(test_acc),
+        "final_train_acc": float(train_acc),
         "best_epoch": int(best_epoch),
         "training_time": float(elapsed_time)
     }
@@ -247,6 +248,7 @@ def main():
     print(f"N features: {n_feats}")
     print(f"N classes: {n_classes}")
 
+    # ------ (a) ------
     # Define grid search parameters
     hidden_sizes = [16, 32, 64, 128, 256]
     learning_rates = [0.1, 0.01, 0.001, 0.0001]
@@ -311,6 +313,34 @@ def main():
     for r in results:
         print(f"{r['hidden_size']:<10} {r['learning_rate']:<10} {r['l2_penalty']:<10} {r['dropout']:<10} {r['best_valid_acc']:.4f} {r['test_acc']:.4f}")
     print("="*90)
+
+    # ------ (c) ------
+
+    best_train_accs = []
+    widths = sorted(hidden_sizes)
+
+    print("\nAnalyzing best models for each width")
+
+    for width in widths:
+        width_results = [r for r in results if r['hidden_size'] == width]
+        
+        best_model = max(width_results, key=lambda x: x['best_valid_acc'])
+        
+        train_acc = best_model['final_train_acc']
+        best_train_accs.append(train_acc)
+        
+        print(f"Width {width}: Best Config {best_model['config_name']} -> Final Train Acc: {train_acc:.4f}")
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(widths, best_train_accs, marker='o', linestyle='-', color='b')
+    plt.xscale('log', base=2) # logarithmic scale, because widths increase exponentially
+    plt.xticks(widths, widths)
+    plt.xlabel('Hidden Layer Width')
+    plt.ylabel('Final Training Accuracy')
+    plt.title('Effect of Width on Training Interpolation')
+    plt.grid(True)
+    plt.savefig('q2/plots/width_vs_train_acc.pdf')
+    print("Plot saved to q2/plots/width_vs_train_acc.pdf")
 
 if __name__ == '__main__':
     main()

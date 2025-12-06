@@ -165,7 +165,8 @@ def feature_extractor_hog(X):
 
 
 def train_single_config(X_train, y_train, X_valid, y_valid, X_test, y_test,
-                       learning_rate, l2_penalty, epochs, config_name, save_dir):
+                       learning_rate, l2_penalty, epochs, config_name, save_dir,
+                       n_classes, n_feats):
     """
     Train a single configuration and return results
     """
@@ -173,9 +174,6 @@ def train_single_config(X_train, y_train, X_valid, y_valid, X_test, y_test,
     print(f"Training configuration: {config_name}")
     print(f"Learning rate: {learning_rate}, L2 penalty: {l2_penalty}")
     print(f"{'='*80}\n")
-
-    n_classes = np.unique(y_train).size
-    n_feats = X_train.shape[1]
 
     # Initialize the model with specific hyperparameters
     model = LogisticRegressor(n_classes, n_feats, learning_rate, l2_penalty)
@@ -261,6 +259,8 @@ def main(args):
     total_configs = len(learning_rates) * len(l2_penalties) * len(feature_types)
     config_num = 0
 
+    n_classes = np.unique(y_train).size
+
     for feature_type in feature_types:
         print(f"\n{'#'*80}")
         print(f"# Feature Type: {feature_type.upper()}")
@@ -278,6 +278,8 @@ def main(args):
             X_test = feature_extractor_hog(X_test_raw)
             print("Feature extraction complete!")
 
+        n_feats = X_train.shape[1]
+
         for lr in learning_rates:
             for l2 in l2_penalties:
                 config_num += 1
@@ -287,7 +289,8 @@ def main(args):
 
                 result = train_single_config(
                     X_train, y_train, X_valid, y_valid, X_test, y_test,
-                    lr, l2, args.epochs, config_name, checkpoint_dir
+                    lr, l2, args.epochs, config_name, checkpoint_dir,
+                    n_classes, n_feats
                 )
                 result["feature_type"] = feature_type
                 results.append(result)

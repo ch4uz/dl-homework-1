@@ -20,6 +20,7 @@ class MultiLayerPerceptron:
         self.n_hidden_units = 100
 
         self.W_L1 = np.random.normal(loc=0.1, scale =0.1, size=(self.n_hidden_units, n_features))
+        self.W_L1[:, -1] = 0.0 # Initialize bias weights to zero
         self.W_L2 = np.random.normal(loc=0.1, scale =0.1, size=(n_classes, self.n_hidden_units))
         self.b_2 = np.zeros((n_classes, ))
 

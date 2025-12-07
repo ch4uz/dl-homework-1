@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 
-import utils
+import utils.utils as utils
 
 
 class MultiLayerPerceptron:
@@ -47,7 +47,11 @@ class MultiLayerPerceptron:
         X (n_examples, n_features): features for the whole dataset
         y (n_examples,): labels for the whole dataset
         """
-        for i in range(X.shape[0]):
+
+        total_loss = 0.0
+        n_samples = X.shape[0]
+
+        for i in range(n_samples):
             z_l1 = self.W_L1 @ X[i]
             h_l1 = self.relu(z_l1)
 
@@ -55,6 +59,8 @@ class MultiLayerPerceptron:
             z_max = np.max(z_l2)
             exp_logits = np.exp(z_l2 - z_max)
             P = exp_logits / np.sum(exp_logits)
+
+            total_loss -= np.log(P[y[i]] + 1e-15)
 
             ey = np.zeros(self.W_L2.shape[0])
             ey[y[i]] = 1.0
@@ -72,6 +78,8 @@ class MultiLayerPerceptron:
             self.b_2 = self.b_2 - self.learning_rate * gradient_b_l2
 
             self.W_L1 = self.W_L1 - self.learning_rate * gradient_w_l1
+
+        return total_loss / n_samples
 
 
     def relu(self, z: np.ndarray) -> np.ndarray:
@@ -126,6 +134,7 @@ def main(args):
 
     valid_accs = []
     train_accs = []
+    train_losses = []
 
     start = time.time()
 
@@ -137,7 +146,8 @@ def main(args):
         X_train = X_train[train_order]
         y_train = y_train[train_order]
 
-        model.train_epoch(X_train, y_train)
+        avg_loss = model.train_epoch(X_train, y_train)
+        train_losses.append(avg_loss)
 
         train_acc = model.evaluate(X_train, y_train)
         valid_acc = model.evaluate(X_valid, y_valid)
@@ -145,7 +155,7 @@ def main(args):
         train_accs.append(train_acc)
         valid_accs.append(valid_acc)
 
-        print('train acc: {:.4f} | val acc: {:.4f}'.format(train_acc, valid_acc))
+        print('train loss: {:.4f} | train acc: {:.4f} | val acc: {:.4f}'.format(avg_loss, train_acc, valid_acc))
 
         if valid_acc > best_valid:
             best_valid = valid_acc
@@ -169,6 +179,12 @@ def main(args):
         filename=args.accuracy_plot
     )
 
+    utils.plot(
+        "Epoch", "Loss",
+        {"train_loss": (epochs, train_losses)},
+        filename=args.loss_plot
+    )
+
     with open(args.scores, "w") as f:
         json.dump(
             {"best_valid": float(best_valid),
@@ -188,6 +204,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--save-path", default="q1/checkpoints/checkpoint-mlp.pickle")
     parser.add_argument("--accuracy-plot", default="q1/plots/Q1-mlp-accs.pdf")
+    parser.add_argument("--loss-plot", default="q1/plots/Q1-mlp-loss.pdf")
     parser.add_argument("--scores", default="q1/scores/Q1-mlp-scores.json")
     args = parser.parse_args()
     main(args)

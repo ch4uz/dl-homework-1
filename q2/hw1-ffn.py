@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import time
 import utils.utils as utils
+import json
 
 
 class FeedforwardNetwork(nn.Module):
@@ -159,6 +160,7 @@ def main():
     parser.add_argument('-data_path', type=str, default='data/emnist-letters.npz',)
     parser.add_argument('-model', type=str, default='ffn', 
                         help="Name of the model for file saving.")
+    parser.add_argument('-scores', type=str, default='q2/scores/Q2-ffn-scores.json')
     opt = parser.parse_args()
 
     utils.configure_seed(seed=42)
@@ -260,11 +262,27 @@ def main():
         "Valid Loss": valid_losses,
     }
 
-    plot(plot_epochs, losses, filename=f'q2/plots/{opt.model}-training-loss-{config}.pdf')
+    plot(plot_epochs, losses, filename=f'q2/plots/Q2-{opt.model}-training-loss-{config}.pdf')
     print(f"Final Training Accuracy: {train_accs[-1]:.4f}")
-    print(f"Best Validation Accuracy: {max(valid_accs):.4f}")
+
+    best_valid_acc = max(valid_accs)
+    best_epoch_idx = valid_accs.index(best_valid_acc)
+    
+    print(f"Best Validation Accuracy: {best_valid_acc:.4f} (at epoch {best_epoch_idx})")
+    
     val_accuracy = { "Valid Accuracy": valid_accs }
-    plot(plot_epochs, val_accuracy, filename=f'q2/plots/{opt.model}-validation-accuracy-{config}.pdf')
+    plot(plot_epochs, val_accuracy, filename=f'q2/plots/Q2-{opt.model}-validation-accuracy-{config}.pdf')
+
+    # Save scores
+    with open(opt.scores, "w") as f:
+        json.dump({
+            "config": vars(opt),
+            "best_valid": float(best_valid_acc),
+            "selected_epoch": int(best_epoch_idx),
+            "test": float(test_acc),
+            "time": float(elapsed_time),
+        }, f, indent=4)
+
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,79 @@
+{
+    "q2_3a_search": [
+        {
+            "config_name": "n1_h32_lr0.1_l20.0001_drop0",
+            "hidden_size": 32,
+            "layers": 1,
+            "learning_rate": 0.1,
+            "l2_penalty": 0.0001,
+            "dropout": 0,
+            "activation": "relu",
+            "optimizer": "sgd",
+            "best_valid_acc": 0.8484615087509155,
+            "test_acc": 0.8428846001625061,
+            "final_train_acc": 0.8642019033432007,
+            "best_epoch": 27,
+            "training_time": 53.35107660293579
+        },
+        {
+            "config_name": "n3_h32_lr0.1_l20.0001_drop0",
+            "hidden_size": 32,
+            "layers": 3,
+            "learning_rate": 0.1,
+            "l2_penalty": 0.0001,
+            "dropout": 0,
+            "activation": "relu",
+            "optimizer": "sgd",
+            "best_valid_acc": 0.8663461804389954,
+            "test_acc": 0.8640865087509155,
+            "final_train_acc": 0.8892019391059875,
+            "best_epoch": 28,
+            "training_time": 64.85089302062988
+        },
+        {
+            "config_name": "n5_h32_lr0.1_l20.0001_drop0",
+            "hidden_size": 32,
+            "layers": 5,
+            "learning_rate": 0.1,
+            "l2_penalty": 0.0001,
+            "dropout": 0,
+            "activation": "relu",
+            "optimizer": "sgd",
+            "best_valid_acc": 0.8645192384719849,
+            "test_acc": 0.8671153783798218,
+            "final_train_acc": 0.8910961747169495,
+            "best_epoch": 30,
+            "training_time": 75.03164267539978
+        },
+        {
+            "config_name": "n7_h32_lr0.1_l20.0001_drop0",
+            "hidden_size": 32,
+            "layers": 7,
+            "learning_rate": 0.1,
+            "l2_penalty": 0.0001,
+            "dropout": 0,
+            "activation": "relu",
+            "optimizer": "sgd",
+            "best_valid_acc": 0.8637499809265137,
+            "test_acc": 0.8509615659713745,
+            "final_train_acc": 0.8775384426116943,
+            "best_epoch": 27,
+            "training_time": 89.10304260253906
+        },
+        {
+            "config_name": "n9_h32_lr0.1_l20.0001_drop0",
+            "hidden_size": 32,
+            "layers": 9,
+            "learning_rate": 0.1,
+            "l2_penalty": 0.0001,
+            "dropout": 0,
+            "activation": "relu",
+            "optimizer": "sgd",
+            "best_valid_acc": 0.03846153989434242,
+            "test_acc": 0.03846153989434242,
+            "final_train_acc": 0.03846153989434242,
+            "best_epoch": 1,
+            "training_time": 106.70862555503845
+        }
+    ]
+}

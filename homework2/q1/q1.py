@@ -22,11 +22,11 @@ from q1_network import Q1Net
 
 BASE_DIR="homework2/q1/"
 
-no_maxpool=True
-no_softmax=True
+with_maxpool=False
+with_softmax=False
 batch_size = 64
 learning_rate = 0.001
-model = Q1Net(no_softmax)
+model = Q1Net(with_softmax, with_maxpool)
 epochs = 1
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 criterion = nn.CrossEntropyLoss()
@@ -142,9 +142,9 @@ print(f"\nTotal training time: {total_time/60:.2f} minutes "
 print('Final Test acc: %.4f' % (evaluate(model=model, loader=test_loader)))
 
 config_parts = [f"{epochs}-epochs"]
-if not no_softmax:
+if with_softmax:
     config_parts.append("with-softmax")
-if not no_maxpool:
+if with_maxpool:
     config_parts.append("with-maxpool")
 config = "_".join(config_parts)
 
